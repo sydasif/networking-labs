@@ -1,0 +1,30 @@
+name: router_on_a_stick
+prefix: ""
+
+topology:
+  nodes:
+    ceos:
+      kind: arista_ceos
+      image: ceos:4.32.0F
+    sw1:
+      kind: cisco_iol
+      image: vrnetlab/cisco_iol:l2-17.12.01
+      type: l2
+    h1:
+      kind: linux
+      image: alpine:latest
+      exec:
+        - ip addr add 192.168.10.10/24 dev eth1
+        - ip route del default
+        - ip route add default via 192.168.10.1
+    h2:
+      kind: linux
+      image: alpine:latest
+      exec:
+        - ip addr add 192.168.20.10/24 dev eth1
+        - ip route del default
+        - ip route add default via 192.168.20.1
+  links:
+    - endpoints: ["h1:eth1", "sw1:eth1"]
+    - endpoints: ["h2:eth1", "sw1:eth2"]
+    - endpoints: ["sw1:eth3", "ceos:eth1"]
