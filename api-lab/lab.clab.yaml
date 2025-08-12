@@ -1,0 +1,20 @@
+name: api-lab
+prefix: ""
+
+topology:
+  groups:
+    cisco:
+      kind: cisco_csr1000v
+      image: vrnetlab/cisco_csr1000v:17.03.05
+    arista:
+      kind: arista_ceos
+      image: asifsyd/ceos:4.32.0F
+  nodes:
+    r1:
+      kind: cisco_csr1000v
+      group: cisco
+    r2:
+      kind: arista_ceos
+      group: arista
+  links:
+    - endpoints: ["r1:eth1", "r2:eth1"]
