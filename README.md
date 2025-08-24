@@ -5,3 +5,5 @@ This repository contains a collection of networking lab exercises designed using
 - [Inter Vlan Routing](/vlans/doc.md)
 - [Router-on-a-stick](/router-on-a-stick/doc.md)
 - [API Lab](/api-lab/doc.md)
+- [Campus Lab](/campus-lab/doc.md)
+- [cEOS Lab](/ceos_lab/doc.md)
