@@ -4,4 +4,4 @@ This repository contains a collection of networking lab exercises designed using
 
 - [Inter Vlan Routing](/vlans/doc.md)
 - [Router-on-a-stick](/router-on-a-stick/doc.md)
-- Cisco IOS XR API
+- [API Lab](/api-lab/doc.md)
