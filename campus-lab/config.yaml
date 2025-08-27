@@ -1,0 +1,7 @@
+---
+inventory:
+  plugin: SimpleInventory
+  options:
+    host_file: clab-campus/nornir-simple-inventory.yml
+logging:
+  enabled: false

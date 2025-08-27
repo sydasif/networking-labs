@@ -1,0 +1,59 @@
+hostname SW2
+!
+spanning-tree mode rapid-pvst
+!
+vlan 10,20
+name USER
+!
+management api http-commands
+no shutdown
+!
+management api gnmi
+transport grpc default
+!
+management api netconf
+transport ssh default
+!
+interface Ethernet1
+description Link to RTR
+no switchport
+ip address 10.1.2.2/30
+!
+interface Ethernet3
+description ACCESS2 LINK
+switchport trunk allowed vlan 20
+switchport mode trunk
+!
+interface Ethernet4
+description ACCESS1 LINK
+switchport trunk allowed vlan 10
+switchport mode trunk
+!
+!
+interface Management0
+ip address 192.168.122.12/24
+!
+interface Vlan10
+ip address 10.10.10.3/24
+vrrp 10 priority-level 110
+vrrp 10 advertisement interval 10
+vrrp 10 ipv4 10.10.10.1
+vrrp 10 ipv4 version 3
+!
+interface Vlan20
+ip address 10.20.20.2/24
+vrrp 20 advertisement interval 10
+vrrp 20 ipv4 10.20.20.1
+vrrp 20 ipv4 version 3
+!
+ip routing
+!
+router ospf 10
+network 10.1.2.0/30 area 0.0.0.0
+network 10.10.10.0/24 area 0.0.0.0
+network 10.20.20.0/24 area 0.0.0.0
+max-lsa 12000
+!
+end
+!
+write memory

@@ -1,0 +1,30 @@
+hostname ACCESS1
+!
+vlan 10
+name USER
+!
+interface Ethernet0/1
+description SW1 LINK
+switchport trunk encapsulation dot1q
+switchport trunk allowed vlan 10
+switchport mode trunk
+no shutdown
+!
+interface Ethernet0/2
+description SW2 LINK
+switchport trunk encapsulation dot1q
+switchport trunk allowed vlan 10
+switchport mode trunk
+no shutdown
+!
+interface Ethernet0/3
+description HOST1 LINK
+switchport access vlan 10
+switchport mode access
+no shutdown
+!
+exit
+!
+end
+!
+write memory
