@@ -1,0 +1,24 @@
+name: ceos-demo
+prefix: ""
+
+mgmt:
+  bridge: virbr0
+  ipv4-subnet: 192.168.122.0/24
+
+topology:
+  kinds:
+    arista_ceos:
+      image: ceos:4.32.0F
+
+  nodes:
+    core1:
+      kind: arista_ceos
+      startup-config: configs/core1-startup-config.cfg
+      mgmt-ipv4: 192.168.122.131
+    core2:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.122.130
+      startup-config: configs/core2-startup-config.cfg
+
+  links:
+    - endpoints: ["core1:eth1", "core2:eth1"]
