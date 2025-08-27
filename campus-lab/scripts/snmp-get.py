@@ -1,5 +1,10 @@
-import asyncio
+"""Retrieves SNMP data from network devices using Nornir and pysnmp."""
 
+import asyncio
+import logging
+
+from nornir import InitNornir
+from nornir.core.task import Result
 from pysnmp.hlapi.v3arch.asyncio import (
     CommunityData,
     ContextData,
@@ -10,33 +15,96 @@ from pysnmp.hlapi.v3arch.asyncio import (
     get_cmd,
 )
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-async def run():
+
+async def snmp_get_task(task, oid, community="public"):
+    """
+    Nornir task to perform an SNMP GET operation.
+
+    Args:
+        task (nornir.core.task.Task): The Nornir task object.
+        oid (str): The OID to retrieve (e.g., "SNMPv2-MIB", "sysDescr", 0).
+        community (str): The SNMP community string.
+
+    Returns:
+        nornir.core.task.Result: The result of the SNMP GET operation.
+    """
+    logging.info(
+        f"Attempting SNMP GET for OID {oid} on {task.host.name} ({task.host.hostname})"
+    )
     snmp_engine = SnmpEngine()
 
-    # 👇 Replace with your Cisco IOL device IP
-    transport = await UdpTransportTarget.create(("192.168.122.10", 161))
+    try:
+        transport = await UdpTransportTarget.create((task.host.hostname, 161))
 
-    result = await get_cmd(
-        snmp_engine,
-        CommunityData("public", mpModel=1),  # SNMP v2c
-        transport,
-        ContextData(),
-        ObjectType(ObjectIdentity("SNMPv2-MIB", "sysDescr", 0)),
-    )
+        # Parse OID string into ObjectIdentity
+        oid_parts = oid.split(",")
+        if len(oid_parts) == 3:
+            object_identity = ObjectIdentity(
+                oid_parts[0].strip(), oid_parts[1].strip(), int(oid_parts[2].strip())
+            )
+        else:
+            object_identity = ObjectIdentity(oid)  # Assume it's a full OID string
 
-    error_indication, error_status, error_index, var_binds = result
+        result = await get_cmd(
+            snmp_engine,
+            CommunityData(community, mpModel=1),  # SNMP v2c
+            transport,
+            ContextData(),
+            ObjectType(object_identity),
+        )
 
-    if error_indication:
-        print(f"[!] Error: {error_indication}")
-    elif error_status:
-        print(f"[!] SNMP Error: {error_status.prettyPrint()} at index {error_index}")
+        error_indication, error_status, error_index, var_binds = result
+
+        if error_indication:
+            error_message = f"Error: {error_indication}"
+            logging.error(f"❌ {task.host.name}: {error_message}")
+            return Result(host=task.host, result=error_message, failed=True)
+        if error_status:
+            error_message = (
+                f"SNMP Error: {error_status.prettyPrint()} at index {error_index}"
+            )
+            logging.error(f"❌ {task.host.name}: {error_message}")
+            return Result(host=task.host, result=error_message, failed=True)
+        output = "\n".join([
+            " = ".join([x.prettyPrint() for x in var_bind]) for var_bind in var_binds
+        ])
+        logging.info(f"✅ {task.host.name}: SNMP GET successful.")
+        return Result(host=task.host, result=output)
+    except Exception as e:
+        error_message = f"An unexpected error occurred: {e}"
+        logging.error(f"❌ {task.host.name}: {error_message}")
+        return Result(host=task.host, result=error_message, failed=True)
+    finally:
+        snmp_engine.close_dispatcher()
+
+
+async def main_async():
+    logging.info("Starting SNMP GET Operation....")
+    logging.info("=" * 40)
+    nr = InitNornir(config_file="config.yaml")
+
+    # Filter to only run on devices where SNMP is expected to be enabled (e.g., Cisco IOL)
+    # In this lab, RTR, ACCESS1, ACCESS2 are Cisco IOL
+    snmp_devices = nr.filter(platform="cisco_iol")
+
+    if snmp_devices.inventory.hosts:
+        # Example: Get sysDescr (1.3.6.1.2.1.1.1.0)
+        result = await snmp_devices.run(
+            task=snmp_get_task, oid="SNMPv2-MIB,sysDescr,0", community="public"
+        )
+        for host_name, host_result in result.items():
+            if host_result.failed:
+                logging.error(f"Result for {host_name}: {host_result.result}")
+            else:
+                logging.info(f"Result for {host_name}:\n{host_result.result}")
     else:
-        for var_bind in var_binds:
-            print(" = ".join([x.prettyPrint() for x in var_bind]))
-
-    snmp_engine.close_dispatcher()
+        logging.warning("No Cisco IOL devices found in inventory for SNMP GET.")
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    asyncio.run(main_async())
